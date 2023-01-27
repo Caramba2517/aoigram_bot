@@ -1,21 +1,111 @@
+import math
+from datetime import datetime
 import sqlite3
 
-db = sqlite3.connect('bot.db')
+db = sqlite3.connect('bot.db', detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
 cur = db.cursor()
 
 
 async def db_connect() -> None:
-    cur.execute("CREATE TABLE IF NOT EXISTS orders (user_id INTEGER NOT NULL, name TEXT, country TEXT, phone TEXT)")
+    cur.execute("""CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER NOT NULL UNIQUE,
+     status TEXT NOT NULL, 
+     time_create TEXT NOT NULL,
+     subscribe_from TEXT NULL)
+     """)
     db.commit()
 
 
-async def get_all_orders(callback):
-    order = cur.execute("SELECT * FROM orders WHERE user_id=?", (callback.message.chat.id,)).fetchall()
-    return order
-
-
-async def create_new_order(message, state):
-    async with state.proxy() as data:
-        order = cur.execute("INSERT INTO orders VALUES (?, ?, ?, ?)", (message.chat.id, data['name'], data['country'], data['phone']))
+async def add_new_sub(message):
+    user = cur.execute("SELECT * FROM users WHERE user_id=?", (message.chat.id,)).fetchall()
+    if user:
+        pass
+    else:
+        cur.execute("INSERT INTO users (user_id, status, time_create) VALUES (?, ?, ?)",
+                    (message.chat.id, 'zero_state', datetime.now(),))
         db.commit()
-    return order
+
+
+async def change_status_to_pc(callback):
+    cur.execute("UPDATE users SET status='payment_confirmation' WHERE user_id=?", (callback.message.chat.id,))
+    db.commit()
+
+
+async def change_status_to_wa(callback):
+    cur.execute("UPDATE users SET status='wait_approve' WHERE user_id=?", (callback.message.chat.id,))
+    db.commit()
+
+
+async def change_status_approve(message):
+    cur.execute("UPDATE users SET status='Current_group_member' WHERE user_id=?", (message.chat.id,))
+    db.commit()
+    cur.execute("UPDATE users SET subscribe_from=? WHERE user_id=?", (datetime.now(), message.chat.id,))
+    db.commit()
+
+
+def status_message(message):
+    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status = 'Current_group_member'",
+                       (message.chat.id,)).fetchone()
+    return stat
+
+
+def current_status_message(message):
+    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status = 'Current_group_next_year'",
+                       (message.chat.id,)).fetchone()
+    return stat
+
+
+def status_callback(callback):
+    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status = 'Current_group_member'",
+                       (callback.message.chat.id,)).fetchone()
+    return stat
+
+
+def current_status_callback(callback):
+    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status = 'Current_group_next_year'",
+                       (callback.message.chat.id,)).fetchone()
+    return stat
+
+
+def count(message):
+    currents = cur.execute("SELECT time_create FROM users WHERE user_id=? ", (message.chat.id,)).fetchall()
+    for current in currents:
+        current_datetime = datetime.strptime(current[0], '%Y-%m-%d %H:%M:%S.%f')
+        end = datetime(current_datetime.year, 12, 31)
+        days_left = (end - current_datetime).days
+        cost = math.ceil(0.4 * days_left)
+        return cost
+
+
+def subscribe_from(message):
+    currents = cur.execute("SELECT subscribe_from FROM users WHERE user_id=? ", (message.chat.id,)).fetchall()
+    for current in currents:
+        current_datetime = datetime.strptime(current[0], '%Y-%m-%d %H:%M:%S.%f')
+        end = datetime(current_datetime.year, 12, 31)
+        days_left = (end - current_datetime).days
+        return days_left
+
+
+async def change_current_status_to_pc(callback):
+    cur.execute("UPDATE users SET status='Current_group_payment_confirmation' WHERE user_id=?",
+                (callback.message.chat.id,))
+    db.commit()
+
+
+async def change_сurrent_status_to_wa(callback):
+    cur.execute("UPDATE users SET status='Current_group_wait_approve' WHERE user_id=?", (callback.message.chat.id,))
+    db.commit()
+
+
+async def change_current_status_approve(callback):
+    cur.execute("UPDATE users SET status='Current_group_next_year' WHERE user_id=?", (callback.message.chat.id,))
+    db.commit()
+
+
+def current_subscribe_from(message):
+    currents = cur.execute("SELECT subscribe_from FROM users WHERE user_id=? ", (message.chat.id,)).fetchall()
+    for current in currents:
+        current_datetime = datetime.strptime(current[0], '%Y-%m-%d %H:%M:%S.%f')
+        end = datetime(current_datetime.year, 12, 31)
+        days_left = (end - current_datetime).days + 365
+        return days_left

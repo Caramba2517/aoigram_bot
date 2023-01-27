@@ -1,29 +1,31 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, \
+    ReplyKeyboardRemove
 from aiogram.utils.callback_data import CallbackData
+from database import sqlite as db
 
 order_cb = CallbackData('order', 'id', 'action')
 remove_cb = ReplyKeyboardRemove()
 
 
-def get_orders_ikb() -> InlineKeyboardMarkup:
-    ikb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton('Создать новый заказ', callback_data='add_new_order')],
-        [InlineKeyboardButton('Просмотр статуса заказа', callback_data='get_all_orders')],
-    ])
-
-    return ikb
-
-
 def get_start_kb() -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton('/orders')]
-    ], resize_keyboard=True)
+        [KeyboardButton('О группе')],
+        [KeyboardButton('Техническая поддержка')],
+        [KeyboardButton('Купить подписку')],
+    ],
+        resize_keyboard=True,
+        input_field_placeholder='Бот распознаёт только нажатие кнопок')
     return kb
 
 
-def get_cancel_kb() -> ReplyKeyboardMarkup:
+def get_start_approve_kb() -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton('/cancel')]
-    ], resize_keyboard=True)
+        [KeyboardButton('О группе')],
+        [KeyboardButton('Техническая поддержка')],
+        [KeyboardButton('Состояние подписки')],
+    ],
+        resize_keyboard=True,
+        input_field_placeholder='Бот распознаёт только нажатие кнопок')
     return kb
+
 
