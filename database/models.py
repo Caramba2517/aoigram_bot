@@ -7,5 +7,9 @@ class ApproveStatesGroup(StatesGroup):
 
 
 class SupportStateGroup(StatesGroup):
+    text = State()
+
+
+class AnswerStatesGroup(StatesGroup):
     user_id = State()
     text = State()

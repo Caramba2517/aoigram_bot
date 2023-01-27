@@ -9,7 +9,7 @@ from keys import TOKEN
 from database import sqlite as db
 from keyboards.keyboard import order_cb, get_start_kb, remove_cb, get_start_approve_kb
 from database import sqlite_approve as db_a
-from database.models import ApproveStatesGroup, SupportStateGroup
+from database.models import ApproveStatesGroup, SupportStateGroup, AnswerStatesGroup
 
 bot = Bot(TOKEN)
 storage = MemoryStorage()
@@ -39,12 +39,12 @@ async def start(message: types.Message):
                              reply_markup=get_start_approve_kb())
 
 
-@dp.message_handler(Text(equals='О группе'))
+@dp.message_handler(text='О группе')
 async def group_info(message: types.Message):
     await message.answer(text='Текст-описание о группе!')
 
 
-@dp.message_handler(Text(equals='Купить подписку'))
+@dp.message_handler(text='Купить подписку')
 async def buy_subscription(message: types.Message):
     buttons = [
         types.InlineKeyboardButton(text='Я оплатил', callback_data='payment_check'),
@@ -87,7 +87,7 @@ async def add_approve_status(callback: types.CallbackQuery) -> None:
 
 
 @dp.message_handler(lambda message: not message.text, state=ApproveStatesGroup.text)
-async def check_photo(message: types.Message):
+async def check_text(message: types.Message) -> None:
     await message.reply('Напиши, пожалуйста, текстом!')
 
 
@@ -101,7 +101,7 @@ async def handle_title(message: types.Message, state: FSMContext) -> None:
 
 
 @dp.message_handler(lambda message: not message.photo, state=ApproveStatesGroup.photo)
-async def check_photo(message: types.Message):
+async def check_photo(message: types.Message) -> None:
     await message.reply('Это не скриншот!')
 
 
@@ -133,7 +133,7 @@ async def approve(message: types.Message):
     print('СТАТУС БД ИЗМЕНЕН НА АПРУВ, ПОДПИСКА НАЧАТА')
 
 
-@dp.message_handler(Text(equals='Состояние подписки'))
+@dp.message_handler(text='Состояние подписки')
 async def buy_subscription(message: types.Message):
     user = db.status_message(message)
     cur_user = db.current_status_message(message)
@@ -195,7 +195,6 @@ async def support(message: types.Message):
 async def text_sender(message: types.Message):
     user_id = message.from_user.id
     full_name = message.from_user.full_name
-    first_name = message.from_user.first_name
     button = [
         types.InlineKeyboardButton(text=f'Ответить', callback_data='answer')
     ]
