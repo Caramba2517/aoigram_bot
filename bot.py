@@ -14,6 +14,7 @@ from database.models import ApproveStatesGroup
 bot = Bot(TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+admin_id = 15362825
 
 
 async def on_startup(_):
@@ -85,6 +86,11 @@ async def add_approve_status(callback: types.CallbackQuery) -> None:
     await ApproveStatesGroup.text.set()
 
 
+@dp.message_handler(lambda message: not message.text, state=ApproveStatesGroup.text)
+async def check_photo(message: types.Message):
+    await message.reply('Напиши, пожалуйста, текстом!')
+
+
 @dp.message_handler(state=ApproveStatesGroup.text)
 async def handle_title(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
@@ -125,14 +131,6 @@ async def approve(message: types.Message):
     await message.answer(text='Платеж успешно подтвержден!', reply_markup=get_start_approve_kb())
     await db.change_status_approve(message)
     print('СТАТУС БД ИЗМЕНЕН НА АПРУВ, ПОДПИСКА НАЧАТА')
-
-
-@dp.message_handler(Text(equals='Техническая поддержка'))
-async def support(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(
-        resize_keyboard=True,
-        input_field_placeholder='Введи вопрос здесь')
-    await message.answer(text='Вы вызывали менеджера, какой у вас вопрос?', reply_markup=keyboard)
 
 
 @dp.message_handler(Text(equals='Состояние подписки'))
@@ -181,6 +179,43 @@ async def cur_payment_selled(callback: types.CallbackQuery):
     await callback.message.answer(text='Платеж успешно подтвержден!', reply_markup=get_start_approve_kb())
     await db.change_current_status_approve(callback)
     print('СТАТУС БД ИЗМЕНЕН НА АПРУВ, ПОДПИСКА НАЧАТА')
+
+
+@dp.message_handler(text='Техническая поддержка')
+async def support(message: types.Message):
+    user_name = message.from_user.first_name
+    if message.from_user.id == admin_id:
+        await message.answer(text=f'Админ {user_name}, вы зашли в чат с техподдержкой', reply_markup=keyboard)
+    else:
+        await message.answer(f'{user_name}, Вы зашли в чат с тех.поддержкой. Какой у вас вопрос?',
+                             reply_markup=remove_cb)
+
+
+@dp.message_handler(content_types=['text', 'photo', 'document'])
+async def text_sender(message: types.Message):
+    user_id = message.from_user.id
+    full_name = message.from_user.full_name
+    first_name = message.from_user.first_name
+    button = [
+        types.InlineKeyboardButton(text=f'Ответить', callback_data='answer')
+    ]
+    button2 = [
+        types.InlineKeyboardButton(text=f'Админ {first_name} прислал сообщение!', callback_data="1")
+    ]
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    keyboard.add(*button)
+    keyboard2 = types.InlineKeyboardMarkup(row_width=1)
+    keyboard2.add(*button2)
+    if message.from_user.id == admin_id:
+        await bot.copy_message(chat_id=message.from_user.id, from_chat_id=message.from_user.id,
+                               message_id=message.message_id, reply_markup=keyboard2)
+        await message.answer('Ваш ответ отправлен')
+    else:
+        await bot.send_message(chat_id=admin_id, text=f'Сообщение от `{user_id}`: {full_name}',
+                               parse_mode=types.ParseMode.MARKDOWN_V2)
+        await bot.copy_message(chat_id=admin_id, from_chat_id=message.from_user.id,
+                               message_id=message.message_id, reply_markup=keyboard)
+        await message.answer('Ваш вопрос отправлен, ожидайте ответа')
 
 
 if __name__ == '__main__':
