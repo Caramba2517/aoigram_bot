@@ -5,3 +5,7 @@ class ApproveStatesGroup(StatesGroup):
     text = State()
     photo = State()
 
+
+class SupportStateGroup(StatesGroup):
+    user_id = State()
+    text = State()

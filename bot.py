@@ -9,7 +9,7 @@ from keys import TOKEN
 from database import sqlite as db
 from keyboards.keyboard import order_cb, get_start_kb, remove_cb, get_start_approve_kb
 from database import sqlite_approve as db_a
-from database.models import ApproveStatesGroup
+from database.models import ApproveStatesGroup, SupportStateGroup
 
 bot = Bot(TOKEN)
 storage = MemoryStorage()
