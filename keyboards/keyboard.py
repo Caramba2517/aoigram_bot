@@ -29,3 +29,8 @@ def get_start_approve_kb() -> ReplyKeyboardMarkup:
     return kb
 
 
+def support_keyboard() -> ReplyKeyboardMarkup:
+    kb = ReplyKeyboardMarkup(
+        resize_keyboard=True,
+        input_field_placeholder='Ожидайте ответа администратора')
+    return kb
