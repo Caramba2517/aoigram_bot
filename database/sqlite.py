@@ -36,33 +36,33 @@ async def change_status_to_wa(callback):
     db.commit()
 
 
-async def change_status_approve(message):
-    cur.execute("UPDATE users SET status='Current_group_member' WHERE user_id=?", (message.chat.id,))
+async def change_status_approve(message, user_id):
+    cur.execute("UPDATE users SET status='Current_group_member' WHERE user_id=?", (user_id,))
     db.commit()
-    cur.execute("UPDATE users SET subscribe_from=? WHERE user_id=?", (datetime.now(), message.chat.id,))
+    cur.execute("UPDATE users SET subscribe_from=? WHERE user_id=?", (datetime.now(), user_id,))
     db.commit()
 
 
 def status_message(message):
-    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status = 'Current_group_member'",
-                       (message.chat.id,)).fetchone()
+    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status=?",
+                       (message.chat.id, 'Current_group_member')).fetchone()
     return stat
 
 
 def current_status_message(message):
-    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status = 'Current_group_next_year'",
+    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status='Current_group_next_year'",
                        (message.chat.id,)).fetchone()
     return stat
 
 
 def status_callback(callback):
-    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status = 'Current_group_member'",
-                       (callback.message.chat.id,)).fetchone()
+    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status=?",
+                       (callback.message.chat.id, 'Current_group_member')).fetchone()
     return stat
 
 
 def current_status_callback(callback):
-    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status = 'Current_group_next_year'",
+    stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status='Current_group_next_year'",
                        (callback.message.chat.id,)).fetchone()
     return stat
 
@@ -109,3 +109,4 @@ def current_subscribe_from(message):
         end = datetime(current_datetime.year, 12, 31)
         days_left = (end - current_datetime).days + 365
         return days_left
+

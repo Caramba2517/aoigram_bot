@@ -13,3 +13,13 @@ class SupportStateGroup(StatesGroup):
 class AnswerStatesGroup(StatesGroup):
     user_id = State()
     text = State()
+
+
+class AdminApprove(StatesGroup):
+    user_id = State()
+
+
+class CurrentApprove(StatesGroup):
+    text = State()
+    photo = State()
+
