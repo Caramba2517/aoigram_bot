@@ -188,7 +188,7 @@ async def approve(message: types.Message, state: FSMContext):
             caption=f'Администратор одобрил ваш запрос!\n Ваша подписка продлена!',
             reply_markup=get_start_approve_kb())
 
-        await db.change_current_status_approve(message, user_id)
+        await db.change_current_status_approve(user_id)
         await state.finish()
 
     else:
@@ -209,7 +209,10 @@ async def buy_subscription(message: types.Message):
     user = db.status_message(message)
     cur_user = db.current_status_message(message)
     if message.chat.type == 'private':
-        if user:
+        if cur_user:
+            n = db.current_subscribe_from(message)
+            await message.answer(text=f'Вашей подписке осталось {n} дней')
+        elif user:
             buttons = [
                 types.InlineKeyboardButton(text='Продлить подписку', callback_data='сurrent_payment_check'),
             ]
@@ -219,10 +222,6 @@ async def buy_subscription(message: types.Message):
 
             await message.answer(text=f'Вашей подписке осталось {n} дней',
                                  reply_markup=keyboard)
-
-        elif cur_user:
-            n = db.current_subscribe_from(message)
-            await message.answer(text=f'Вашей подписке осталось {n} дней')
 
         else:
             await message.answer(text='У вас нет оформленной подписки.',
@@ -245,11 +244,11 @@ async def cur_payment_check(callback: types.CallbackQuery):
 async def cur_add_approve_status(callback: types.CallbackQuery) -> None:
     await callback.message.edit_reply_markup()
     await callback.message.answer('Отправь информацию об оплате (ccылку или скриншот):', reply_markup=remove_cb)
-    await ApproveStatesGroup.info.set()
+    await CurrentApprove.info.set()
 
 
 @dp.message_handler(content_types=['text', 'photo'], state=CurrentApprove.info)
-async def cur_handle_photo(message: types.Message, state: FSMContext) -> None:
+async def handle_photo(message: types.Message, state: FSMContext) -> None:
     user_id = message.from_user.id
     user_name = message.from_user.full_name
     button = [
@@ -257,16 +256,24 @@ async def cur_handle_photo(message: types.Message, state: FSMContext) -> None:
     ]
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(*button)
-    await db.change_сurrent_status_to_wa(message)
-    async with state.proxy() as data:
-        data['photo'] = message.photo[0].file_id
-    await db_a.create_new_approve(message, state)
     await bot.send_message(
         chat_id=admin_id,
-        text=f'Пользователь `{user_id}` ({user_name}) прислал данные для подтверждения ПРОДЛЕНИЯ ПОДПИСКИ:',
+        text=f'Пользователь `{user_id}` {user_name} прислал данные для подтверждения ПРОДЛЕНИЯ ПОДПИСКИ:',
         parse_mode=types.ParseMode.MARKDOWN_V2,
     )
-    await bot.send_photo(chat_id=admin_id, caption=data.get('text'), photo=data.get('photo'), reply_markup=keyboard)
+    if message.photo:
+        async with state.proxy() as data:
+            data['info'] = message.photo[0].file_id
+            await bot.send_photo(chat_id=admin_id, photo=data.get('info'), reply_markup=keyboard)
+    if message.text:
+        async with state.proxy() as data:
+            data['info'] = message.text
+            await bot.send_message(chat_id=admin_id, text=data.get('info'), reply_markup=keyboard)
+
+    await db_a.create_new_approve(message, state)
+    await message.answer('Cпасибо за продление подписки, ожидайте подтверждение от администатора!',
+                         reply_markup=get_start_approve_kb())
+
     await state.finish()
 
 
@@ -312,7 +319,7 @@ async def support(message: types.Message, state: FSMContext):
             # await message.answer('Ваш вопрос отправлен, ожидайте ответа')
     else:
         await state.finish()
-        await message.answer(text='Спасибо за обращение', reply_markup=get_start_approve_kb())
+        await message.answer(text='Спасибо за обращение.', reply_markup=get_start_approve_kb())
 
 
 @dp.callback_query_handler(text='answer')  # 3

@@ -116,7 +116,7 @@ async def change_сurrent_status_to_wa(callback):
     db.commit()
 
 
-async def change_current_status_approve(message, user_id):
+async def change_current_status_approve(user_id):
     cur.execute("UPDATE users SET status='Current_group_next_year' WHERE user_id=?", (user_id,))
     db.commit()
 
