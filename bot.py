@@ -98,7 +98,8 @@ async def payment_check(callback: types.CallbackQuery):
 @dp.callback_query_handler(text='wait_approve')
 async def add_approve_status(callback: types.CallbackQuery) -> None:
     await callback.message.edit_reply_markup()
-    await callback.message.answer('Отправь информацию об оплате, :', reply_markup=remove_cb)
+    await callback.message.answer('Отправь информацию об оплате(ссылка на подтверждение или скриншот) :',
+                                  reply_markup=remove_cb)
     await ApproveStatesGroup.info.set()
 
 
@@ -222,19 +223,11 @@ async def cur_payment_check(callback: types.CallbackQuery):
 @dp.callback_query_handler(text='current_payment_selled')
 async def cur_add_approve_status(callback: types.CallbackQuery) -> None:
     await callback.message.edit_reply_markup()
-    await callback.message.answer('Отправь информацию об оплате, укажите платежную систему:', reply_markup=remove_cb)
-    await ApproveStatesGroup.text.set()
+    await callback.message.answer('Отправь информацию об оплате (ccылку или скриншот):', reply_markup=remove_cb)
+    await ApproveStatesGroup.info.set()
 
 
-@dp.message_handler(state=CurrentApprove.text)
-async def cur_payment_sold(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['text'] = message.text
-    await message.answer('Отправь скриншот об оплате:')
-    await CurrentApprove.next()
-
-
-@dp.message_handler(content_types=['photo'], state=CurrentApprove.photo)
+@dp.message_handler(content_types=['text', 'photo'], state=CurrentApprove.info)
 async def cur_handle_photo(message: types.Message, state: FSMContext) -> None:
     user_id = message.from_user.id
     user_name = message.from_user.full_name
@@ -244,7 +237,6 @@ async def cur_handle_photo(message: types.Message, state: FSMContext) -> None:
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(*button)
     await db.change_сurrent_status_to_wa(message)
-    print('ПОКА ВСЕ НОРМ')
     async with state.proxy() as data:
         data['photo'] = message.photo[0].file_id
     await db_a.create_new_approve(message, state)
@@ -330,7 +322,7 @@ async def answer_callback_text(message: types.Message, state: FSMContext):
     keyboard.add(*button)
     admin_name = message.from_user.first_name
     await message.answer('Ответ отправлен')
-    await bot.send_message(chat_id=data.get('user_id'), text=f'Админ {admin_name} вам ответил:')
+    # await bot.send_message(chat_id=data.get('user_id'), text=f'Админ {admin_name} вам ответил:')
     await bot.copy_message(chat_id=data.get('user_id'), from_chat_id=message.from_user.id,
                            message_id=message.message_id, reply_markup=keyboard)
     await state.finish()

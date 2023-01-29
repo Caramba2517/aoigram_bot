@@ -20,6 +20,5 @@ class AdminApprove(StatesGroup):
 
 
 class CurrentApprove(StatesGroup):
-    text = State()
-    photo = State()
+    info = State()
 
