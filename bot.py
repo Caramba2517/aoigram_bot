@@ -15,11 +15,12 @@ from database.models import ApproveStatesGroup, SupportStateGroup, AnswerStatesG
 bot = Bot(TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-admin_id = 15362825
+admin_id = 1966767
 chat_id = -1001844904366
 channel_link = 'https://kor.ill.in.ua/m/610x385/2722809.jpg'
-
-
+welcome_photo_url = 'https://kor.ill.in.ua/m/610x385/2722809.jpg'
+admin_approve_photo_url = 'https://koshka.top/uploads/posts/2021-12/1640248531_1-koshka-top-p-kot-ulibaetsya-1.jpg'
+group_information_photo_url = 'https://kor.ill.in.ua/m/610x385/2722809.jpg'
 async def on_startup(_):
     await db.db_connect()
     await db_a.db_connect()
@@ -28,17 +29,22 @@ async def on_startup(_):
 
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
+    welcome_photo = types.input_file.InputFile.from_url(
+        url=welcome_photo_url,
+        filename='cat.jpg',
+        chunk_size=100000
+    )
     name = message.chat.first_name
     user = db.status_message(message)
     if message.chat.type == 'private':
         if message.from_user.id == admin_id:
-            await message.answer(f'Для администрирования жмите /admin')
+            await message.answer_photo(photo=welcome_photo, caption=f'Для администрирования жмите /admin')
         elif not user:
-            await message.answer(f'Привет, {name}!',
+            await message.answer_photo(photo=welcome_photo, caption=f'Привет, {name}!',
                                  reply_markup=get_start_kb())
             await db.add_new_sub(message)
         else:
-            await message.answer(f'Привет, {name}!\n'
+            await message.answer_photo(photo=welcome_photo, caption=f'Привет, {name}!\n'
                                  
                                  f'\nУ тебя есть действуюшая подписка. Подробнее по кнопке: "Состояние подписки"',
                                  reply_markup=get_start_approve_kb())
@@ -57,7 +63,15 @@ async def admin_start(message: types.Message):
 @dp.message_handler(text='О группе')
 async def group_info(message: types.Message):
     if message.chat.type == 'private':
-        await message.answer(text='Текст-описание о группе!')
+        group_information_photo = types.input_file.InputFile.from_url(
+            url=group_information_photo_url,
+            filename='cat.jpg',
+            chunk_size=100000
+        )
+        await message.answer_photo(
+            photo=group_information_photo,
+            caption='Текст-описание о группе!'
+            )
 
 
 @dp.message_handler(text='Купить подписку')
@@ -158,23 +172,30 @@ async def check_approve_id(callback: types.CallbackQuery):
 async def approve(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['user_id'] = message.text
+    welcome_photo = types.input_file.InputFile.from_url(
+        url=admin_approve_photo_url,
+        filename='cat.jpg',
+        chunk_size=100000
+    )
     link = await bot.create_chat_invite_link(chat_id=chat_id, member_limit=1)
     invite_link = link.invite_link
     user_id = message.text
     user = db.status_check_approve(user_id)
     if user:
-        await bot.send_message(
+        await bot.send_photo(
+            photo=welcome_photo,
             chat_id=data.get('user_id'),
-            text=f'Администратор одобрил ваш запрос!\n Ваша подписка продлена!',
+            caption=f'Администратор одобрил ваш запрос!\n Ваша подписка продлена!',
             reply_markup=get_start_approve_kb())
 
         await db.change_current_status_approve(message, user_id)
         await state.finish()
 
     else:
-        await bot.send_message(
+        await bot.send_photo(
             chat_id=data.get('user_id'),
-            text=f'Администратор одобрил ваш запрос!\nВаша ссылка на закрытую группу <a href="{invite_link}">здесь</a>'
+            photo=welcome_photo,
+            caption=f'Администратор одобрил ваш запрос!\nВаша ссылка на закрытую группу <a href="{invite_link}">здесь</a>'
                  f'\nA <a href="{channel_link}">здесь</a> ссылка на наш канал',
             reply_markup=get_start_approve_kb(),
             parse_mode=types.ParseMode.HTML)

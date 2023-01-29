@@ -9,9 +9,11 @@ remove_cb = ReplyKeyboardRemove()
 
 def get_start_kb() -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton('О группе')],
-        [KeyboardButton('Техническая поддержка')],
-        [KeyboardButton('Купить подписку')],
+        [
+        KeyboardButton('О группе'),
+        KeyboardButton('Техническая поддержка'),
+        KeyboardButton('Купить подписку'),
+        ]
     ],
         resize_keyboard=True,
         input_field_placeholder='Бот распознаёт только нажатие кнопок')
@@ -20,9 +22,11 @@ def get_start_kb() -> ReplyKeyboardMarkup:
 
 def get_start_approve_kb() -> ReplyKeyboardMarkup:
     kb = ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton('О группе')],
-        [KeyboardButton('Техническая поддержка')],
-        [KeyboardButton('Состояние подписки')],
+        [
+            KeyboardButton('О группе'),
+            KeyboardButton('Техническая поддержка'),
+            KeyboardButton('Купить подписку'),
+        ]
     ],
         resize_keyboard=True,
         input_field_placeholder='Бот распознаёт только нажатие кнопок')
