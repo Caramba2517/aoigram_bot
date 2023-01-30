@@ -25,7 +25,7 @@ def get_start_approve_kb() -> ReplyKeyboardMarkup:
         [
             KeyboardButton('О группе'),
             KeyboardButton('Техническая поддержка'),
-            KeyboardButton('Купить подписку'),
+            KeyboardButton('Состояние подписки'),
         ]
     ],
         resize_keyboard=True,

@@ -64,8 +64,21 @@ def status_message(message):
 
 def status_check_approve(user_id):
     stat = cur.execute("SELECT * FROM users WHERE user_id=? AND status=?",
-                       (user_id, 'Current_group_payment_confirmation')).fetchone()
-    return stat
+                       (user_id, 'Current_group_member')).fetchone()
+    stat1 = cur.execute("SELECT * FROM users WHERE user_id=? AND status=?",
+                        (user_id, 'Current_group_payment_confirmation')).fetchone()
+    stat2 = cur.execute("SELECT * FROM users WHERE user_id=? AND status=?",
+                        (user_id, 'Current_group_wait_approve')).fetchone()
+    stat3 = cur.execute("SELECT * FROM users WHERE user_id=? AND status=?",
+                        (user_id, 'Current_group_next_year')).fetchone()
+    if stat:
+        return stat
+    elif stat1:
+        return stat1
+    elif stat2:
+        return stat2
+    elif stat3:
+        return stat3
 
 
 def current_status_message(message):

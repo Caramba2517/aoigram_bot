@@ -100,24 +100,16 @@ async def payment_check(callback: types.CallbackQuery):
     if not user and callback.message.chat.type == 'private':
         await db.change_status_to_pc(callback)
         print('СТАТУС В БД ИЗМЕНЕН НА PC')
-        buttons = [
-            types.InlineKeyboardButton(text='Начать проверку', callback_data='wait_approve')
-        ]
-        keyboard = types.InlineKeyboardMarkup()
-        keyboard.add(*buttons)
-        await callback.message.answer(text=f'Чтобы подтвердить платёж следуй инструкциям бота',
-                                      reply_markup=keyboard)
+        await callback.message.answer('Пожалуйста, пришлите TxID транзакции, ссылку на транзакцию или скриншот оплаты:')
 
     else:
-        await callback.message.edit_text('У тебя есть действуюшая подписка. Подробнее по кнопке: "Состояние подписки"')
-
-
-@dp.callback_query_handler(text='wait_approve')
-async def add_approve_status(callback: types.CallbackQuery) -> None:
-    await callback.message.edit_reply_markup()
-    await callback.message.answer('Отправь информацию об оплате(ссылка на подтверждение или скриншот) :',
-                                  reply_markup=remove_cb)
+        await callback.message.edit_text('У тебя есть действующая подписка. Подробнее по кнопке: "Состояние подписки"')
     await ApproveStatesGroup.info.set()
+
+
+# @dp.callback_query_handler(text='wait_approve')
+# async def add_approve_status(callback: types.CallbackQuery) -> None:
+#     await callback.message.edit_reply_markup()
 
 
 @dp.message_handler(content_types=['text', 'photo'], state=ApproveStatesGroup.info)
@@ -184,6 +176,7 @@ async def approve(message: types.Message, state: FSMContext):
     invite_link = link.invite_link
     user_id = message.text
     user = db.status_check_approve(user_id)
+    print(user)
     if user:
         await bot.send_photo(
             photo=welcome_photo,
@@ -234,6 +227,11 @@ async def buy_subscription(message: types.Message):
 @dp.callback_query_handler(text='current_payment_check')
 async def cur_payment_check(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup()
+    buttons = [
+        types.InlineKeyboardButton(text='Я оплатил', callback_data='current_payment_wa'),
+    ]
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(*buttons)
     await db.change_current_status_to_pc(callback)
     await callback.message.answer(text=f'Продление подписки стоит 149$/год\n'
                               f'\nОплата производится в USDT, по адресу:'
@@ -244,7 +242,8 @@ async def cur_payment_check(callback: types.CallbackQuery):
 @dp.callback_query_handler(text='current_payment_wa')
 async def cur_add_approve_status(callback: types.CallbackQuery) -> None:
     await callback.message.edit_reply_markup()
-    await callback.message.answer('Отправь информацию об оплате (ccылку или скриншот):', reply_markup=remove_cb)
+    await callback.message.answer('Пожалуйста, пришлите TxID транзакции, ссылку на транзакцию или скриншот оплаты:')
+    await db.change_сurrent_status_to_wa(callback)
     await CurrentApprove.info.set()
 
 
@@ -304,6 +303,7 @@ async def support(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['text'] = message.text
         user_id = message.from_user.id
+        a.append(user_id)
         full_name = message.from_user.full_name
         button = [
             types.InlineKeyboardButton(text=f'Ответить', callback_data='answer'),
@@ -325,10 +325,10 @@ async def support(message: types.Message, state: FSMContext):
 
 
 @dp.callback_query_handler(text='answer')  # 3
-async def answer_callback(callback: types.CallbackQuery, state: FSMContext) -> None:
-    await bot.send_message(chat_id=admin_id, text='Введите ID пользователя (только цифры, без двоеточия):')
-
-    await AnswerStatesGroup.user_id.set()
+async def answer_callback(callback: types.CallbackQuery, state:FSMContext) -> None:
+    await callback.message.edit_reply_markup()
+    await bot.send_message(chat_id=admin_id, text='Введите ответ:')
+    await AnswerStatesGroup.text.set()
 
 
 @dp.callback_query_handler(text='end_chat')
@@ -351,9 +351,10 @@ async def answer_callback_text(message: types.Message, state: FSMContext):
                                          input_field_placeholder='Ожидайте ответа администратора')
     keyboard.add(*button)
     await message.answer('Ответ отправлен')
-    # await bot.send_message(chat_id=data.get('user_id'), text=f'Админ {admin_name} вам ответил:')
-    await bot.copy_message(chat_id=data.get('user_id'), from_chat_id=message.from_user.id,
+    for b in a:
+        await bot.copy_message(chat_id=b, from_chat_id=message.from_user.id,
                            message_id=message.message_id, reply_markup=keyboard)
+    a.pop()
     await state.finish()
 
 
